@@ -1,0 +1,209 @@
+<!DOCTYPE>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Explore Vue.js</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <style>
+        /*
+        * IE doesn't support <template>, see http://caniuse.com/#feat=template
+        */
+
+        #test-template {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="form-group">
+                <label>Search</label>
+                <input type="text" class="search-input" v-model="searchQuery" />
+            </div>
+            <div class="container">
+                <simple-grid :data-list="filteredUsers" :columns="columns"></simple-grid>
+            </div>
+        </div>
+    </div>
+
+
+    <!----------------template-------------------->
+    <template id="simple-grid-template">
+        <table v-if="sortedData.length">
+            <thead>
+                <tr>
+                    <th v-for="col in columns" @click="sortBy(col.name)" :class="{active: sortKey == col.name}">
+                        {{col.name | capitalize}}
+                        <span class="arrow" :class="sortOrders[col.name] > 0 ? 'asc': 'desc'"></span>
+                    </th>
+                    <th>Operation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(entry, index) in sortedData">
+                    <td v-for="col in columns">
+                        <span v-if="col.isKey"><a href="javascript:;" @click="openEditDialog(entry[col.name])">{{entry[col.name]}}</a></span>
+                        <span v-else>{{entry[col.name]}}</span>
+                    </td>
+                    <td class="text-center">
+                        <button class="btn-danger" @click="deleteItem(entry)">delete</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <p v-else>No matches found.</p>
+    </template>
+    <!----------------template-------------------->
+</body>
+<script src="lib/vue/vue.js"></script>
+<script>
+    Vue.component('simple-grid', {
+        template: '#simple-grid-template',
+        replace: true,
+        props: {
+            dataList: Array,
+            columns: Array
+        },
+        data: function () {
+            var sortOrders = {};
+            this.columns.forEach(function (col) {
+                sortOrders[col.name] = 1
+            });
+
+            var keyColumn = '';
+            for (var i = 0; i < this.columns.length; i++) {
+                if (this.columns[i].isKey) {
+                    keyColumn = this.columns[i]['name'];
+                    break;
+                }
+            }
+
+            return {
+                sortKey: '',
+                sortOrders: sortOrders,
+                data2: this.dataList,
+                keyColumn: keyColumn
+            }
+        },
+        computed: {
+            sortedData: function () {
+                var sortKey = this.sortKey;
+                var order = this.sortOrders[sortKey] || 1;
+                var data = this.dataList;
+                if (sortKey) {
+                    data = data.slice().sort(function (a, b) {
+                        a = a[sortKey];
+                        b = b[sortKey];
+                        return (a === b ? 0 : a > b ? 1 : -1) * order;
+                    });
+                }
+                return data;
+            }
+        },
+        ready: function () {
+            for (var i = 0; i < this.columns.length; i++) {
+                if (this.columns[i].isKey) {
+                    this.keyColumn = this.columns[i]['name'];
+                    break;
+                }
+            }
+        },
+        filters: {
+            capitalize: function (str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+        },
+        methods: {
+            openEditDialog: function (keyValue) {
+                var item = this.findItemByKey(keyValue);
+                alert(item.name + ' - ' + item.email);
+            },
+            deleteItem: function (entry) {
+                var data = this.data2;
+                data.forEach(function (item, i) {
+                    if (item === entry) {
+                        data.splice(i, 1);
+                        return;
+                    }
+                });
+            },
+            sortBy: function (key) {
+                this.sortKey = key;
+                this.sortOrders[key] = this.sortOrders[key] * -1;
+            },
+            findItemByKey: function (keyValue) {
+                var self = this;
+                for (var i = 0; i < this.data2.length; i++) {
+                    if (this.data2[i][self.keyColumn] === keyValue) {
+                        return this.data2[i];
+                    }
+                }
+                return [];
+            }
+        }
+    });
+</script>
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            searchQuery: '',
+            columns: [{
+                name: 'email',
+                isKey: true
+            }, {
+                name: 'name'
+            }, {
+                name: 'sex'
+            }, {
+                name: 'birthday'
+            }],
+            users: [{
+                name: 'Jack',
+                sex: 'Male',
+                email: 'jack99@qyq.cn',
+                birthday: '1978-12-9',
+            }, {
+                name: 'Rose',
+                sex: 'Female',
+                email: 'rose332@qyq.cn',
+                birthday: '1998-3-17',
+            }, {
+                name: 'Denis',
+                sex: 'Male',
+                email: 'denis0932@qyq.cn',
+                birthday: '1985-6-12',
+            }, {
+                name: 'Sunny',
+                sex: 'Female',
+                email: 'sunny0506@qyq.cn',
+                birthday: '1986-6-6',
+            }, {
+                name: 'Tony',
+                sex: 'Male',
+                email: 'tony001@qyq.cn',
+                birthday: '1973-1-22',
+            }, ]
+        },
+        computed: {
+            filteredUsers: function () {
+                var filterKey = this.searchQuery && this.searchQuery.toLowerCase();
+                var data = this.users;
+                if (filterKey) {
+                    data = data.filter(function (row) {
+                        return Object.keys(row).some(function (key) {
+                            return String(row[key]).toLowerCase().indexOf(filterKey) > -1;
+                        });
+                    });
+                }
+
+                return data;
+            }
+        }
+    });
+</script>
+
+</html>
